@@ -1,0 +1,222 @@
+//#include <Wifi.h>
+#include <Wire.h>
+#include <ESP8266WiFi.h>
+#define RELAY_PIN D6
+
+#define BLYNK_TEMPLATE_ID "ada diblynk"
+#define BLYNK_TEMPLATE_NAME "ada diblynk"
+#define BLYNK_AUTH_TOKEN "ada diblynk"
+#define BLYNK_PRINT Serial
+#include <PZEM004Tv30.h>
+#include <BlynkSimpleEsp8266.h>
+#include <LiquidCrystal_I2C.h>
+
+// Definisi pin I2C pada Wemos D1 Mini
+#define I2C_SDA D2
+#define I2C_SCL D1
+
+
+// Inisialisasi Blynk
+//BlynkTimer timer;
+char auth[] = "sesuai BLYNK_AUTH_TOKEN";
+
+//LiquidCrystal_I2C lcd(0x27,20,4);
+
+//SSID untuk wifi
+char ssid[] = "nama wifi";
+char pass[] = "password  wifi";
+
+//inisialisasi objek untuk PZEM (sensor arus)
+ PZEM004Tv30 pzem (13, 15); // 13=D7(TX) 15=D8(RX) Relay=d6
+
+//inisialisasi liquid crystal I2C
+ LiquidCrystal_I2C lcd(0x27, 16, 2);
+
+
+// variable penampung untuk nilai sensor arus
+float Power, Energy, Voltage, Current;
+//int Voltage, Current;
+
+void setup () {
+  //aktifkan serial
+  Serial.begin(115200);
+  // koneksi ke Blynk
+  Blynk.begin(auth, ssid, pass);
+  pinMode(RELAY_PIN, OUTPUT);
+  digitalWrite(RELAY_PIN, HIGH);
+  // Inisialisasi LCD
+  lcd.begin(16, 2); // Ukuran LCD 16x2
+  lcd.backlight(); // Aktifkan backlight LCD
+
+{
+  Serial.print("SMART MONITORING");
+  lcd.init();
+  lcd.backlight();
+  lcd.setCursor(0, 0);
+  lcd.print("SMART MONITORING");
+  Serial.println("AND CONTROLLING");
+  lcd.setCursor(0, 1);
+  lcd.print("AND CONTROLLING");
+  delay (4000);
+}
+}
+
+ void loop() { 
+  //delay (1000);
+  //lcd.init();
+  //lcd.backlight();
+  //baca nilai power (kW)
+  {
+  Power = pzem.power();
+  // display.clearDisplay();
+
+  //jika gagal membaca power
+  if (isnan(Power))
+ {
+    Serial.println("Gagal power");
+    lcd.init();
+    lcd.backlight();
+    lcd.setCursor(0, 0);
+    lcd.print("Gagal power");
+  
+ }
+ else
+ {
+    Serial.print ("DAYA : ");
+    Serial.print(Power);     
+    Serial.println ("WATT");
+    lcd.init();
+    lcd.backlight();
+    lcd.setCursor(0, 0);
+    lcd.print("DAYA : ");
+    lcd.print(Power);
+    lcd.print("WATT");
+    delay (1500);
+ }
+  
+
+ //baca nilai energi (kWH)
+  Energy = pzem.energy();
+  //jika gagal membaca energi
+ if (isnan(Energy))
+ {
+    Serial.println("Gagal energi");
+    lcd.init();
+    lcd.backlight();
+    lcd.setCursor(0, 1);
+    lcd.print("Gagal energi");
+  
+ }
+ else
+ {
+    Serial.print ("Energi : ");
+    Serial.print(Energy);     
+    Serial.println ("kWH");
+    lcd.init();
+    lcd.backlight();
+    lcd.setCursor(0, 1);
+    lcd.print("Energi : ");
+    lcd.print(Energy);
+    lcd.print("kWH");
+    delay(1500);
+ }
+ }
+ {
+ //baca nilai voltage (V)
+  Voltage = pzem.voltage();
+  //jika gagal membaca voltage
+   if (isnan(Voltage))
+ {
+    Serial.println("Gagal voltage");
+    lcd.init();
+    lcd.backlight();
+    lcd.setCursor(0, 0);
+    lcd.print("Gagal voltage");
+  
+ }
+  else
+ {
+    Serial.print ("Volt : ");
+    Serial.print(Voltage);     
+    Serial.println ("V");
+    lcd.init();
+    lcd.backlight();
+    lcd.setCursor(0, 0);
+    lcd.print("Volt : ");
+    lcd.print(Voltage);
+    lcd.print("V");
+    delay (1500);
+ }
+//baca nilai current (A)
+  Current = pzem.current();
+  //jika gagal membaca current
+  if (isnan(Current))
+ {
+    Serial.println("Gagal current");
+    lcd.init();
+    lcd.backlight();
+    lcd.setCursor(0, 1);
+    lcd.print("Gagal current");
+  
+ }
+  else
+ {
+    Serial.print ("Current : ");
+    Serial.print(Current);     
+    Serial.println ("A");
+    lcd.init();
+    lcd.backlight();
+    lcd.setCursor(0, 1);
+    lcd.print("Current : ");
+    lcd.print(Current);
+    lcd.print("A");
+    delay (1500);
+ }
+ }
+
+ {
+ if (Energy >= 10) {
+    digitalWrite(RELAY_PIN, HIGH); // Relay OFF
+    Serial.println("Relay OFF");
+    lcd.init();
+    lcd.backlight();
+    lcd.setCursor(1, 0);
+    lcd.print("AUTO CUT OFF");
+  } 
+ else {
+    digitalWrite(RELAY_PIN, LOW); // Relay ON
+    Serial.println("Relay ON");
+    lcd.init();
+    lcd.backlight();
+    lcd.setCursor(3, 0);
+    lcd.print("RELAY ON");
+  }
+ }
+  Serial.println();
+  
+
+   //kirim data ke Blynk
+   //Power = V0, Energy = V1, Voltage = V2, Current = V3
+   Blynk.virtualWrite(V0, Power);
+   Blynk.virtualWrite(V1, Energy);
+   Blynk.virtualWrite(V2, Voltage);
+   Blynk.virtualWrite(V3, Current);
+   
+   //delay (4000);
+   Blynk.run ();
+ }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
